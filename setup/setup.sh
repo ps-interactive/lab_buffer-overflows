@@ -4,11 +4,8 @@ function LabSetup() {
   # LabSetup properties
   local _Title="Exploit Development Lab: Buffer Overflows";
   local _Flag="/tmp/.setup-complete";
-  local _Stat="/psorceri";
   local _Verbose="true";
-  local _SSLProxy="$1";
-  local _Proxy="$2";
-  local _Before="INSTALLING";
+  local _Proxy="$1";
   local _Now="";
   local -a _Apps=(
     "gcc"
@@ -28,56 +25,43 @@ function LabSetup() {
   Exists() {
     test -f $1 || return 1;
     return 0;
-  }
-  # Method to set status during setup
-  Status(){
-    _Before="${_Now}";
-    _Now="${@}";
-    if [[ ! -z "${_Before}" ]]; then
-      if (Exists "${_Stat}/${_Before}"); then
-        rm "${_Stat}/${_Before}";
-      fi;
-    fi;
-    touch "${_Stat}/${_Now}";
-    echo "${_Now}";
-    return 0;
-  }
+  }  
   # Method to display informational messages
   Info() {
-    [[ -z "$1" ]] || Status "INFO ($(date)): ${@}";
+    [[ -z "$1" ]] || echo "INFO ($(date)): ${@}";
     return 0;
   }
   # Method to display verbose messages for debugging
   Debug() {
     if [[ "${_Verbose}" ]]; then
-      [[ -z "$1" ]] || Status "DEBUG ($(date)): ${@}";
+      [[ -z "$1" ]] || echo "DEBUG ($(date)): ${@}";
     fi;
     return 0;
   }
   # Method to display error messages
   Error() {
-    [[ -z "$1" ]] || Status "ERROR ($(date)): ${@}";
+    [[ -z "$1" ]] || echo "ERROR ($(date)): ${@}";
     return 1;
   }
   # Method to install packages and dependencies
   Install() {
     Info "Setting up APT repository";
     Info "Updating repository and installing dependencies";
-    http_proxy=${_SSLProxy} apt update;
-    http_proxy=${_SSLProxy} apt update;
-    http_proxy=${_SSLProxy} DEBIAN_FRONTEND=noninteractive apt -y --force-yes install ${_Apps[@]};
+    http_proxy=${_Proxy} apt update;
+    http_proxy=${_Proxy} apt update;
+    http_proxy=${_Proxy} DEBIAN_FRONTEND=noninteractive apt -y --force-yes install ${_Apps[@]};
 
     Info "Setting up GDB peda extension";
     git -c http.proxy=${_Proxy} clone https://github.com/longld/peda.git ~/peda
     echo "source ~/peda/peda.py" >> ~/.gdbinit
 
     Info "Setting up boofuzz and ROPgadget packages"
-    python3 -m pip --proxy ${_SSLProxy} install boofuzz ROPgadget;
+    python3 -m pip --proxy ${_Proxy} install boofuzz ROPgadget;
     return 0;
   }
   # Method to download a file from the web
   DownloadFile(){
-    curl --proxy ${_SSLProxy} -o "$2" -skL "$1";
+    curl --proxy ${_Proxy} -o "$2" -skL "$1";
     return 0;
   }
   # Method to download the lab files from the Github repository
@@ -166,4 +150,6 @@ EOF
   Setup;
 }
 
-LabSetup "$1" "$2" &>/tmp/setup.log ; cat /tmp/setup.log;
+LabSetup "$1" &>/tmp/setup.log;
+cat /tmp/setup.log;
+rm /tmp/setup.log;
